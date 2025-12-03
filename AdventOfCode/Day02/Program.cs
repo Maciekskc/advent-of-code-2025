@@ -3,7 +3,7 @@ try
 {
     if (!File.Exists(path)) throw new ArgumentException($"File {path} does not exist.");
 
-    var giftShopDatabase = new GiftShopDatabase();
+    var giftShopDatabase = new GiftShopDatabaseSolver(false);
     using var sr = new StreamReader(path);
     var invalidIds = giftShopDatabase.FindInvalidIds(sr);
 
@@ -15,10 +15,8 @@ catch (Exception e)
     Console.WriteLine($"Could not find invalid ids. Exception details: {e}");
 }
 
-public class GiftShopDatabase
+public class GiftShopDatabaseSolver(bool isDebugEnabled)
 {
-    private string[] _items = [];
-
     public List<long> FindInvalidIds(StreamReader sr)
     {
         var input = sr.ReadLine();
@@ -30,8 +28,14 @@ public class GiftShopDatabase
         foreach (var idRange in idRanges)
         {
             var idsParsed = ParseIdRange(idRange);
+            if(isDebugEnabled)
+                Console.WriteLine($"Range: {idsParsed.min}-{idsParsed.max}");
+            
             var invalidIds = GetInvalidIds(idsParsed);
             
+            if(isDebugEnabled)
+                invalidIds.ForEach(Console.WriteLine);
+
             result.AddRange(invalidIds);
         }
         
@@ -67,13 +71,23 @@ public class GiftShopDatabase
     {
         var idAsString = id.ToString();
         var idLength = idAsString.Length;
-        
-        if(idLength % 2 != 0)
-            return true;
 
-        var firstHalf = idAsString[..(idLength / 2)];
-        var secondHalf = idAsString[(idLength / 2)..];
-        
-        return firstHalf != secondHalf;
+        for (var chunkSize = 1; chunkSize <= idLength / 2; chunkSize++)
+        {
+            if(idLength % chunkSize != 0)
+                continue;
+            
+            var chunks = idAsString.Split(chunkSize);
+            if(chunks.All(chunk => chunk == chunks[0]))
+                return false;
+        }
+
+        return true;
     }
+}
+internal  static class StringExtensions
+{
+    internal static string[] Split(this string str, int chunkSize) =>
+        Enumerable.Range(0, str.Length / chunkSize)
+            .Select(i => str.Substring(i * chunkSize, chunkSize)).ToArray();
 }
