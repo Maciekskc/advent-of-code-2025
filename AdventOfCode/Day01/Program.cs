@@ -5,7 +5,7 @@ try
 
     var safe = new Safe();
     using var sr = new StreamReader(path);
-    var answer = safe.Decode(sr);
+    var answer = safe.Decode(sr, true);
 
     Console.WriteLine($"The answer for given input is {answer}");
 }
@@ -19,7 +19,8 @@ internal class Safe
     private const int DialRange = 100;
     private int _state = 50;
     private int _zeroCounter;
-
+    private bool _isProtocol0X434C49434BEnabled = false;
+    
     private void ResetState()
     {
         _state = 50;
@@ -37,18 +38,50 @@ internal class Safe
         var side = request[0];
         var requestedClicks = int.Parse(request.Substring(1));
 
-        _state += side switch
+        var turnInfo = GetTurnInfo(side switch
         {
             'L' => -requestedClicks,
             'R' => requestedClicks,
             _ => throw new ArgumentOutOfRangeException("Rotation side")
-        };
+        });
+        CalculateTurn(turnInfo);
+        _state += turnInfo.clicksFixed;
         AdjustState();
-        if (_state == 0) _zeroCounter++;
     }
 
-    public int Decode(StreamReader reader)
+    private void CalculateTurn((int fullRotations, int clicksFixed) turnInfo)
     {
+        if (_isProtocol0X434C49434BEnabled)
+            CalculateFor0X434C49434B(turnInfo);
+        
+        CalculateDefault(turnInfo.clicksFixed);
+    }
+
+    private void CalculateFor0X434C49434B((int fullRotations, int clicksFixed) turnInfo)
+    {
+        _zeroCounter += turnInfo.fullRotations;
+        var nextPosition = _state + turnInfo.clicksFixed;
+
+        var crossZeroCondition = nextPosition switch
+        {
+            > DialRange when _state < DialRange => true,
+            < 0 when _state > 0 => true,
+            _ => false
+        };
+        
+        if (crossZeroCondition) _zeroCounter++;
+    }
+
+    private void CalculateDefault(int clicks)
+    {
+        if(_state + clicks is 0 or DialRange) _zeroCounter++;
+    }
+
+    private static (int fullRotations, int clicksFixed) GetTurnInfo(int totalClicks) => (int.Abs(totalClicks/DialRange), totalClicks % (DialRange));
+
+    public int Decode(StreamReader reader, bool isProtocol0X434C49434BEnabled)
+    {
+        _isProtocol0X434C49434BEnabled =  isProtocol0X434C49434BEnabled;
         while (!reader.EndOfStream)
         {
             var line = reader.ReadLine();
