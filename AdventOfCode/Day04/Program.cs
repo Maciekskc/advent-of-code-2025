@@ -1,22 +1,42 @@
 ﻿using Helpers;
 
 var path = "input.txt";
-
 using var filestream = FileHelper.GetFileStream(path);
 var magazine = FileHelper.GetCharMatrixFromFile(filestream);
 filestream.Close();
 
-var answer = new PrintingDepartmentSolver(magazine).FindAccessibleRolls();
-Console.WriteLine($"The answer for given input is {answer}");
+var solver = new PrintingDepartmentSolver(magazine, true);
+Console.WriteLine($"The answer for given input is {solver.CalculateAccessibleRolls(true)}");
 
 internal class PrintingDepartmentSolver(char[][] magazine, bool isDebugEnabled = false)
 {
-    const char RollChar = '@';
-    const char AccesibleRollChar = 'x';
-    const char EmptySlot = '.';
-    const int MaxRollNeighbours = 4;
+    private const char RollChar = '@';
+    private const char AccessibleRollChar = 'x';
+    private const char EmptySlot = '.';
+    private const int MaxRollNeighbours = 4;
 
-    internal int FindAccessibleRolls()
+    public int CalculateAccessibleRolls(bool recursiveCalculation = false)
+    {
+        var accessibleRollsCount = 0;
+        int newAccessibleRolls;
+
+        do
+        {
+            DetectAccessibleRolls();
+            newAccessibleRolls = CountAccessibleRolls();
+            accessibleRollsCount += newAccessibleRolls;
+            if (isDebugEnabled)
+                Console.WriteLine(
+                    $"Found {newAccessibleRolls} new accessible rolls. Total accessible rolls in this iteration.");
+            if (false) // keep for special debugging needs - it prints too much so tweak the condition if needed
+                PrintMagazine();
+            RemoveAccessibleRolls();
+        } while (recursiveCalculation && newAccessibleRolls > 0);
+
+        return accessibleRollsCount;
+    }
+
+    private void DetectAccessibleRolls()
     {
         for (var i = 0; i < magazine.Length; i++)
         for (var j = 0; j < magazine[i].Length; j++)
@@ -25,20 +45,25 @@ internal class PrintingDepartmentSolver(char[][] magazine, bool isDebugEnabled =
                 continue;
 
             if (IfAccessible(i, j))
-                magazine[i][j] = AccesibleRollChar;
+                magazine[i][j] = AccessibleRollChar;
         }
-
-        PrintMagazine();
-        return CountAccessibleRolls();
     }
 
-    private int CountAccessibleRolls() => magazine.SelectMany(row => row).Count(column => column == AccesibleRollChar);
+    private int CountAccessibleRolls() => magazine.SelectMany(row => row).Count(column => column == AccessibleRollChar);
+
+    private void RemoveAccessibleRolls()
+    {
+        foreach (var t in magazine)
+            for (var j = 0; j < t.Length; j++)
+            {
+                if (t[j] == AccessibleRollChar)
+                    t[j] = EmptySlot;
+            }
+    }
 
     private bool IfAccessible(int x, int y)
     {
         var counter = 0;
-        if (isDebugEnabled)
-            Console.WriteLine($"Check for Magazine[{x}][{y}] is a roll . Incrementing.");
 
         for (var i = x - 1; i <= x + 1; i++)
         {
@@ -51,23 +76,21 @@ internal class PrintingDepartmentSolver(char[][] magazine, bool isDebugEnabled =
 
                 if (j < 0 || j >= magazine[i].Length)
                     continue;
-                if (magazine[i][j] == RollChar || magazine[i][j] == AccesibleRollChar)
-                {
-                    if (isDebugEnabled)
-                        Console.WriteLine($"Magazine[{i}][{j}] is a roll . Incrementing.");
-                    counter++;
-                }
+                if (magazine[i][j] != RollChar && magazine[i][j] != AccessibleRollChar) continue;
+
+                counter++;
+
+                if (counter < MaxRollNeighbours) continue;
+                break;
             }
         }
-
-        if (isDebugEnabled)
-            Console.WriteLine($"Magazine[{x}][{y}] have {counter} roll neighbours.");
 
         return counter < MaxRollNeighbours;
     }
 
     private void PrintMagazine()
     {
+        Console.WriteLine("Current magazine state:");
         foreach (var line in magazine)
         {
             foreach (var character in line)
