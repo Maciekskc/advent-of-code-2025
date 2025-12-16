@@ -22,7 +22,7 @@ public static class FileHelper
         {
             var line = sr.ReadLine();
             ArgumentException.ThrowIfNullOrEmpty(line);
-            matrix.Add(line.Split(separator));
+            matrix.Add(line.Split(separator, StringSplitOptions.RemoveEmptyEntries));
         }
 
         return matrix.ToArray();
