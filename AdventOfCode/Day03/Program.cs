@@ -5,7 +5,7 @@ try
 {
     if (!File.Exists(path)) throw new ArgumentException($"File {path} does not exist.");
 
-    var safe = new EscalatorPowerResolver(true, 12);
+    var safe = new EscalatorPowerResolver(false, 12);
     using var sr = new StreamReader(path);
     var answer = safe.GetTotalVoltagePower(sr);
 
@@ -18,8 +18,8 @@ catch (Exception e)
 
 public class EscalatorPowerResolver(bool isDebugEnabled, int allowedDigits)
 {
-    private int _allowedDigits = allowedDigits;
     private long _totalVoltagePower;
+    
     public long GetTotalVoltagePower(StreamReader sr)
     {
         _totalVoltagePower = 0;
@@ -27,29 +27,33 @@ public class EscalatorPowerResolver(bool isDebugEnabled, int allowedDigits)
         {
             var bankInput = sr.ReadLine();
             ArgumentException.ThrowIfNullOrEmpty(bankInput);
-            _totalVoltagePower += CalculateHighestJoltageOfTheBank(bankInput);
+            var partialSum = CalculateHighestJoltageOfTheBank(bankInput);
+            _totalVoltagePower += partialSum;
+            Console.WriteLine($"Search in {bankInput} joltage {partialSum}");
         }
 
         return _totalVoltagePower;
     }
 
-    private int CalculateHighestJoltageOfTheBank(string line)
+    private long CalculateHighestJoltageOfTheBank(string line)
     {
-        var cursor = 0; // cursor for substringing
-        var sum = 0; // current sum
+        var cursor = 0; 
+        long sum = 0; 
         if(isDebugEnabled)
-            Console.WriteLine($"Finding max joltage ({_allowedDigits} digits) in {line}");
+            Console.WriteLine($"Finding max joltage ({allowedDigits} digits) in {line}");
         
-        for (var i = _allowedDigits ; i > 0; i--) //  we iterate for allowed joltage digits
+        for (var i = allowedDigits ; i > 0; i--) 
         {
-
-            var nextMax = line //we take line
-                .Substring(cursor, line.Length - i) // substringg from cursor to max size
-                .Max(); // find max value in this sub array
+            var partLength = line.Length - i - cursor + 1;
+            var nextMax = line 
+                .Substring(cursor, partLength) 
+                .Max();
+            
             if (isDebugEnabled)
-                Console.WriteLine($"MAX in {line.Substring(cursor, line.Length - i)} = {nextMax.value}[pos{nextMax.position}]");
-            sum += nextMax.value; // we add max value to the sum
-            cursor += nextMax.position + 1; // we move cursor to the new possition
+                StringExtensions.JoltageSearchDebugging(line, cursor, partLength,  nextMax.position + cursor);
+            
+            sum += nextMax.value; 
+            cursor += nextMax.position + 1; 
 
             sum *= 10;
         }
@@ -60,7 +64,7 @@ public class EscalatorPowerResolver(bool isDebugEnabled, int allowedDigits)
 
 internal static class StringExtensions{
 
-    internal static (int value, int position) Max(this string input, int cursorBaseOffset = 0)
+    internal static (long value, int position) Max(this string input, int cursorBaseOffset = 0)
     {
         var max = 0;
         var position = -1;
@@ -77,20 +81,45 @@ internal static class StringExtensions{
         return (max, position + cursorBaseOffset);
     }
 
-    internal static void WriteLineHighlight(string message, int cursor, int length, ConsoleColor color)
+    /// <summary>
+    /// This is an internal metod for debugging joltage. It is printing line with highlighting range of the search and max value found.
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="cursor"></param>
+    /// <param name="length"></param>
+    /// <param name="maxPosition"></param>
+    internal static void JoltageSearchDebugging(string message, int cursor, int length, int maxPosition = -1)
     {
+        if (string.IsNullOrEmpty(message))
+        {
+            Console.WriteLine();
+            return;
+        }
+
+        if (cursor < 0) cursor = 0;
+        if (length <= 0)
+        {
+            Console.WriteLine(message);
+            return;
+        }
+
+        var original = Console.ForegroundColor;
+        var end = Math.Min(message.Length, cursor + length);
+
         for (var i = 0; i < message.Length; i++)
         {
-            if(i <= cursor && i >=(cursor + length) )
+            Console.ForegroundColor = i switch
             {
-                Console.ForegroundColor = color;
-            }
-            else
-            {
-                Console.ForegroundColor = default;
-            }
+                _ when i == maxPosition => ConsoleColor.Red,
+                _ when i >= cursor && i < end => ConsoleColor.Blue,
+                _ => original
+            };
+
+            
             Console.Write(message[i]);
         }
+
+        Console.ForegroundColor = original;
         Console.WriteLine();
     }
 }
