@@ -15,6 +15,14 @@ public static class FileHelper
         return matrix.ToArray();
     }
 
+    public static List<string> ReadAllLines(this StreamReader sr)
+    {
+        List<string> result = new List<string>();
+        while (!sr.EndOfStream)
+            result.Add(sr.ReadLine()!);
+        return result;
+    }
+    
     public static StreamReader GetFileStream(string path)
     {
         if (!File.Exists(path)) throw new ArgumentException($"File {path} does not exist.");
