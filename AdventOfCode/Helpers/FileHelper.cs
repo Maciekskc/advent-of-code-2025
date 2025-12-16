@@ -14,6 +14,19 @@ public static class FileHelper
 
         return matrix.ToArray();
     }
+    
+    public static string[][] GetStringMatrixFromFile(this StreamReader sr, char separator = ' ')
+    {
+        List<string[]> matrix = [];
+        while (!sr.EndOfStream)
+        {
+            var line = sr.ReadLine();
+            ArgumentException.ThrowIfNullOrEmpty(line);
+            matrix.Add(line.Split(separator));
+        }
+
+        return matrix.ToArray();
+    }
 
     public static List<string> ReadAllLines(this StreamReader sr)
     {
