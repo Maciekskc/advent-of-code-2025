@@ -5,7 +5,7 @@ try
 {
     if (!File.Exists(path)) throw new ArgumentException($"File {path} does not exist.");
 
-    var safe = new EscalatorPowerResolver(false);
+    var safe = new EscalatorPowerResolver(true, 12);
     using var sr = new StreamReader(path);
     var answer = safe.GetTotalVoltagePower(sr);
 
@@ -16,8 +16,9 @@ catch (Exception e)
     Console.WriteLine($"Could calculate joltage. Exception details: {e}");
 }
 
-public class EscalatorPowerResolver(bool isDebugEnabled)
+public class EscalatorPowerResolver(bool isDebugEnabled, int allowedDigits)
 {
+    private int _allowedDigits = allowedDigits;
     private long _totalVoltagePower;
     public long GetTotalVoltagePower(StreamReader sr)
     {
@@ -34,21 +35,26 @@ public class EscalatorPowerResolver(bool isDebugEnabled)
 
     private int CalculateHighestJoltageOfTheBank(string line)
     {
-        var firstMax = line.Max();
-        var rightPart = line[(firstMax.position + 1)..];
-        
-        var secondMax = rightPart.Length > 0 ? rightPart.Max(firstMax.position) : line.Remove(firstMax.position, 1).Max();
-
-        if (firstMax.position <= secondMax.position)
-            secondMax.position++;
-        
+        var cursor = 0; // cursor for substringing
+        var sum = 0; // current sum
         if(isDebugEnabled)
-            Console.WriteLine($"Bank line: {line}, First max: {firstMax.value} at {firstMax.position}, Second max: {secondMax.value} at {secondMax.position}");
+            Console.WriteLine($"Finding max joltage ({_allowedDigits} digits) in {line}");
         
-        if (firstMax.position >= secondMax.position)
-            return secondMax.value * 10 + firstMax.value;
-        
-        return firstMax.value * 10 + secondMax.value;
+        for (var i = _allowedDigits ; i > 0; i--) //  we iterate for allowed joltage digits
+        {
+
+            var nextMax = line //we take line
+                .Substring(cursor, line.Length - i) // substringg from cursor to max size
+                .Max(); // find max value in this sub array
+            if (isDebugEnabled)
+                Console.WriteLine($"MAX in {line.Substring(cursor, line.Length - i)} = {nextMax.value}[pos{nextMax.position}]");
+            sum += nextMax.value; // we add max value to the sum
+            cursor += nextMax.position + 1; // we move cursor to the new possition
+
+            sum *= 10;
+        }
+
+        return sum / 10;
     }
 }
 
@@ -69,5 +75,22 @@ internal static class StringExtensions{
         }
         
         return (max, position + cursorBaseOffset);
+    }
+
+    internal static void WriteLineHighlight(string message, int cursor, int length, ConsoleColor color)
+    {
+        for (var i = 0; i < message.Length; i++)
+        {
+            if(i <= cursor && i >=(cursor + length) )
+            {
+                Console.ForegroundColor = color;
+            }
+            else
+            {
+                Console.ForegroundColor = default;
+            }
+            Console.Write(message[i]);
+        }
+        Console.WriteLine();
     }
 }
