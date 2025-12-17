@@ -27,6 +27,19 @@ public static class FileHelper
 
         return matrix.ToArray();
     }
+    
+    public static string[] GetStringListFromFile(this StreamReader sr)
+    {
+        List<string> list = [];
+        while (!sr.EndOfStream)
+        {
+            var line = sr.ReadLine();
+            ArgumentException.ThrowIfNullOrEmpty(line);
+            list.Add(line);
+        }
+
+        return list.ToArray();
+    }
 
     public static List<string> ReadAllLines(this StreamReader sr)
     {

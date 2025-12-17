@@ -1,41 +1,96 @@
-﻿using Helpers;
+﻿using System.Text;
+using Helpers;
 
 var path = "input.txt";
-var matrix = FileHelper.GetFileStream(path).GetStringMatrixFromFile();
+var matrix = FileHelper.GetFileStream(path).GetStringListFromFile();
 
 var solver = new TrashCompactorSolver(matrix);
-Console.WriteLine($"The answer for given input is {solver.SolveEquations(true)}");
+Console.WriteLine($"The answer for given input is {solver.SolveEquations()}");
 
 internal class TrashCompactorSolver
 {
     private readonly string[] _problemsOperations;
     private readonly string[][] _worksheet;
-    private readonly int[][] _problemsSorted;
+    private readonly int[][] _problemsNumbers;
 
-    public TrashCompactorSolver(string[][] worksheet)
+    public TrashCompactorSolver(string[] worksheetLines)
     {
-        _worksheet = worksheet;
+        _worksheet = SplitWorkbookRespectingNumbers(worksheetLines);
         PrintWorkbook();
 
-        var dimensions = (rows: worksheet.Length, columns: worksheet[0].Length);
-        _problemsSorted = new int[dimensions.columns][];
-        _problemsOperations = new string[dimensions.columns];
-        
-        for (var i = 0; i < dimensions.columns; i++)
+        _problemsOperations = worksheetLines[^1].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        _problemsNumbers = ReadNumbersRightToLeft(_worksheet);
+
+        // PrintEquations();
+    }
+
+    private static int[][] ReadNumbersRightToLeft(string[][] worksheet)
+    {
+        var numberMatrixDimensions = (rows: worksheet.Length - 1, columns: worksheet[0].Length);
+        var numbers = new int[numberMatrixDimensions.columns][];
+
+        for (int column = 0; column < numberMatrixDimensions.columns; column++)
         {
-            _problemsSorted[i] = new int[dimensions.rows -1];
-            for (var j = 0; j < dimensions.rows; j++)
+            numbers[column] = new int[worksheet[0][column].Length];
+
+            for (int digit = 0; digit < worksheet[0][column].Length; digit++)
             {
-                if (j != dimensions.rows - 1)
+                var builder = new StringBuilder(worksheet[0][column].Length);
+                for (int row = 0; row < numberMatrixDimensions.rows; row++)
                 {
-                    _problemsSorted[i][j] = int.Parse(worksheet[j][i]);
+                    builder.Append(worksheet[row][column][digit]);
                 }
-                else
-                {
-                    _problemsOperations[i] = worksheet[j][i];
-                }
+
+                numbers[column][digit] = int.Parse(builder.ToString());
             }
         }
+
+        return numbers;
+    }
+
+    private static string[][] SplitWorkbookRespectingNumbers(string[] worksheetLines)
+    {
+        string[][] fixedWorksheet = new string[worksheetLines.Length][];
+        string[] worksheetLinesFixed = new string[worksheetLines.Length];
+
+        for (var i = 0; i < worksheetLines.Length; i++)
+        {
+            if (i != worksheetLines.Length - 1)
+            {
+                var builder = new StringBuilder(worksheetLines[i].Length);
+                for (var j = 0; j < worksheetLines[i].Length; j++)
+                {
+                    if (worksheetLines[i][j] == ' ' && IsSeparatorPosition(worksheetLines, j))
+                    {
+                        builder.Append(':');
+                    }
+                    else
+                    {
+                        builder.Append(worksheetLines[i][j]);
+                    }
+                }
+
+                worksheetLinesFixed[i] = builder.ToString();
+            }
+            else
+            {
+                worksheetLinesFixed[i] = worksheetLines[i];
+            }
+
+            fixedWorksheet[i] = worksheetLinesFixed[i].Split(':', StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        return fixedWorksheet;
+    }
+
+    private static bool IsSeparatorPosition(string[] worksheetLines, int positionInLine)
+    {
+        var numberOfRealCharacters = 0;
+        for (var i = 0; i < worksheetLines.Length - 1; i++)
+            if (worksheetLines[i][positionInLine] != ' ')
+                numberOfRealCharacters++;
+
+        return numberOfRealCharacters == 0;
     }
 
     private void PrintWorkbook()
@@ -44,28 +99,27 @@ internal class TrashCompactorSolver
         foreach (var line in _worksheet)
             Console.WriteLine(string.Join(" ", line));
     }
-    
+
     private void PrintEquations()
     {
         Console.WriteLine("Equations:");
         for (int i = 0; i < _worksheet[0].Length; i++)
         {
             Console.Write(_problemsOperations[i]);
-            foreach (var line in _problemsSorted[i])
-                Console.WriteLine(string.Join(" ", line));
+            foreach (var line in _problemsNumbers[i])
+                Console.WriteLine(string.Join(' ', line));
         }
-        
     }
 
-    public long SolveEquations(bool b)
+    public long SolveEquations()
     {
-        var partialResults = new long[_problemsSorted.Length];
-        for (var index = 0; index < _problemsSorted.Length; index++)
+        var partialResults = new long[_problemsNumbers.Length];
+        for (var index = 0; index < _problemsNumbers.Length; index++)
         {
             long partialSum = _problemsOperations[index] == "*" ? 1 : 0;
-            foreach (var element in _problemsSorted[index])
+            foreach (var element in _problemsNumbers[index])
             {
-                switch (_problemsOperations[index]) 
+                switch (_problemsOperations[index])
                 {
                     case "+":
                         partialSum += element;
@@ -73,14 +127,16 @@ internal class TrashCompactorSolver
                     case "*":
                         partialSum *= element;
                         break;
-                    
+
                     default:
                         throw new ArgumentException($"Unknown operation: {_problemsOperations[index]}");
                 }
             }
+
             partialResults[index] = partialSum;
-            Console.WriteLine($"{string.Join(_problemsOperations[index] , _problemsSorted[index])} = {partialSum}");
+            Console.WriteLine($"{string.Join(_problemsOperations[index], _problemsNumbers[index])} = {partialSum}");
         }
+
         var sum = partialResults.Sum();
         Console.WriteLine($"{string.Join("+", partialResults)} = {sum}");
 
