@@ -4,7 +4,7 @@ var path = "input.txt";
 using var reader = FileHelper.GetFileStream(path);
 
 var solver = new PlaygroundSolver(reader);
-Console.WriteLine($"The answer for given input is {solver.FindCircuits(1000)}");
+Console.WriteLine($"The answer for given input is {solver.ConnectAll()}");
 
 public class PlaygroundSolver
 {
@@ -95,6 +95,23 @@ public class PlaygroundSolver
         }
         
         return circuits.Select(circuit => circuit.Count).OrderByDescending(x => x).Take(3).Aggregate((a, b) => a * b);
+    }
+    
+    public int ConnectAll()
+    {
+        List<List<int>> circuits = [];
+        var matrix = CalculateDistanceMatrix();
+        var iterationCounter = 0;
+        (int FirstIterator, int SecondIterator, double distance) shorterDistance = (-1,-1,-1);
+        while(!(circuits.Count == 1 && circuits.First().Count == JunctionBoxes.Count))
+        {
+            iterationCounter++;
+            shorterDistance = FindMinimalDistance(matrix);
+            AdjustCircuits(circuits, shorterDistance);
+            matrix = GetFixedMatrix(matrix, shorterDistance.FirstIterator, shorterDistance.SecondIterator);
+        }
+        Console.WriteLine($"Job is finished after {iterationCounter} iterations. Last Elements are {shorterDistance.FirstIterator}({JunctionBoxes[shorterDistance.FirstIterator]}) and {shorterDistance.SecondIterator}({JunctionBoxes[shorterDistance.SecondIterator]})");
+        return JunctionBoxes[shorterDistance.FirstIterator].X * JunctionBoxes[shorterDistance.SecondIterator].X;
     }
 
     private void AdjustCircuits(List<List<int>> circuits,
