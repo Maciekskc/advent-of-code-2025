@@ -1,10 +1,10 @@
 ﻿using Helpers;
 
-var path = "input.txt";
+var path = "input-test.txt";
 var lines = FileHelper.GetFileStream(path).GetStringListFromFile();
 
 var solver = new FactorySolver(lines);
-Console.WriteLine($"The answer for given input is {solver.SolvePuzzles()}");
+Console.WriteLine($"The answer for given input is {solver.SolvePuzzles(true)}");
 
 internal class FactorySolver
 {
@@ -16,13 +16,15 @@ internal class FactorySolver
             _machines.Add(new Machine(line));
     }
 
-    public long SolvePuzzles()
+    public long SolvePuzzles(bool joltageMode = false)
     {
         long sum = 0;
         foreach (var machine in _machines)
         {
-            var requiredClicks = FindMinimalButtonClickCountToGetToTheLightsTargetSequence(machine);
             Console.WriteLine(machine);
+            var requiredClicks = joltageMode
+                ? CalculateClicksForJoltage(machine)
+                : CalculateClicksForLightsIndicator(machine);
             Console.WriteLine($"To get to the initiation state you need {requiredClicks} clicks");
             sum += requiredClicks;
         }
@@ -30,33 +32,83 @@ internal class FactorySolver
         return sum;
     }
 
-    private int FindMinimalButtonClickCountToGetToTheLightsTargetSequence(Machine machine)
+    private int CalculateClicksForLightsIndicator(Machine machine)
     {
         var combinationLength = 1;
         do
         {
-            
-            var combinations = Numerics.NET.Iterators.Combinations(machine.Buttons.Length, combinationLength);
+            var combinations = CombinationsWithRepetition(machine.Buttons.Length, combinationLength);
             foreach (var combination in combinations)
             {
-                var currentSequence = machine.SimulateButtonsSequenceClick(combination);
+                var currentSequence = machine.GetIndicatorLightStateFromButtonsSequenceClick(combination);
                 if (currentSequence == machine.IndicatorTargetSequence)
                     return combinationLength;
             }
 
             combinationLength++;
-            
-            if(combinationLength == 20)
-            {
-                Console.WriteLine("We reach length 20. It is unexpectedly big. Terminating");
-                return -1;
-            }
+
         } while (true); //it has to find at some point
+    }
+
+    private int CalculateClicksForJoltage(Machine machine)
+    {
+        var combinationLength = machine.JoltageSequence.Max();
+        var counter = 0;
+        do
+        {
+            var combinations = CombinationsWithRepetition(machine.Buttons.Length, combinationLength);
+            foreach (var combination in combinations)
+            {
+                var currentSequence = machine.GetJoltageStateFromButtonsSequenceClick(combination);
+                if (currentSequence.SequenceEqual(machine.JoltageSequence))
+                {
+                    Console.WriteLine($"Joltage state match after {counter} checks. Combination of {combinationLength} digits, Sequence: [{string.Join(',',combination)}]");
+                    return combinationLength;
+                }
+                counter++;
+            }
+
+            combinationLength++;
+
+            // if (combinationLength == 20)
+            // {
+            //     Console.WriteLine("We reach length 20. It is unexpectedly big. Terminating");
+            //     return -1;
+            // }
+        } while (true); //it has to find at some point
+    }
+
+    static IEnumerable<int[]> CombinationsWithRepetition(int n, int k)
+    {
+        if (k <= 0)
+            yield break;
+
+        var maxValue = n - 1;
+
+        var combo = new int[k];
+        while (true)
+        {
+            yield return (int[])combo.Clone();
+
+            var i = k - 1;
+
+            while (i >= 0 && combo[i] == maxValue)
+                i--;
+
+            if (i < 0)
+                yield break;
+
+            combo[i]++;
+
+            for (var j = i + 1; j < k; j++)
+                combo[j] = combo[i];
+        }
     }
 
     private class Machine
     {
         public readonly string IndicatorTargetSequence;
+        public readonly int[] JoltageSequence;
         public int[][] Buttons { get; }
 
         public Machine(string machineDescription)
@@ -77,12 +129,17 @@ internal class FactorySolver
 
                 iterator++;
             }
+
+            var joltagaArray = inputs[^1][1..^1].Split(',');
+            JoltageSequence = new int[joltagaArray.Length];
+            for (var index = 0; index < joltagaArray.Length; index++)
+                JoltageSequence[index] = int.Parse(joltagaArray[index]);
         }
 
         public override string ToString() =>
-            $"Machine with initiating sequence [{IndicatorTargetSequence}]. Buttons [{string.Join(",", Buttons.Select(button => "(" + string.Join(",", button) + ")"))}]";
+            $"Machine with initiating sequence [{IndicatorTargetSequence}]. Required Joltage [{string.Join(',',JoltageSequence)}]. Buttons [{string.Join(",", Buttons.Select(button => "(" + string.Join(",", button) + ")"))}]";
 
-        public string SimulateButtonsSequenceClick(int[] buttonsSequence)
+        public string GetIndicatorLightStateFromButtonsSequenceClick(int[] buttonsSequence)
         {
             var lights = new char[IndicatorTargetSequence.Length];
             Array.Fill(lights, '.');
@@ -94,16 +151,32 @@ internal class FactorySolver
 
             return new string(lights);
         }
+        
+        public int[] GetJoltageStateFromButtonsSequenceClick(int[] buttonsSequence)
+        {
+            var joltageState = new int[JoltageSequence.Length];
+
+            foreach (var buttonIndex in buttonsSequence)
+            {
+                var positions = Buttons[buttonIndex];
+                foreach (var position in positions)
+                {
+                    joltageState[position]++;
+                }
+            }
+
+            return joltageState;
+        }
 
         private void PressButton(int buttonIndex, char[] lights)
         {
-           foreach (var lightIndex in Buttons[buttonIndex])
-           {
+            foreach (var lightIndex in Buttons[buttonIndex])
+            {
                 if (lightIndex < 0 || lightIndex >= lights.Length)
                     continue;
 
                 lights[lightIndex] = lights[lightIndex] == '.' ? '#' : '.';
-           }
+            }
         }
     }
 }
