@@ -9,8 +9,8 @@ Console.WriteLine($"The answer for given input is {solver.SolveRiddle(true)}");
 internal class CafeteriaSolver
 {
     private readonly bool _isDebugEnabled;
-    private readonly List<(long from, long to)> _ranges = [];
     private readonly List<long> _products;
+    private readonly List<(long from, long to)> _ranges = [];
 
     public CafeteriaSolver(List<string> database, bool isDebugEnabled = false)
     {
@@ -26,7 +26,7 @@ internal class CafeteriaSolver
                 continue;
             }
 
-            if (long.TryParse(line, out long value))
+            if (long.TryParse(line, out var value))
                 _products.Add(value);
         }
 
@@ -46,13 +46,13 @@ internal class CafeteriaSolver
     private long CountProductsConsideredFresh()
     {
         var joinedRanges = JoinFreshnessRanges(_ranges);
-        int previousCount = 0;
-        int rangesCount = 0;
+        var previousCount = 0;
+        var rangesCount = 0;
 
         if (_isDebugEnabled)
             Console.WriteLine(
                 $"Initial iteration reduced ranges from {_ranges.Count} to {joinedRanges.Count}");
-        
+
         do
         {
             previousCount = joinedRanges.Count;
@@ -70,29 +70,34 @@ internal class CafeteriaSolver
                 $"Stopped loop. The final count of not overlying ranges is {rangesCount}.");
             PrintRanges(joinedRanges);
         }
+
         return joinedRanges.Sum(x => x.to - x.from + 1);
     }
 
     private void PrintRanges(List<(long from, long to)> joinedRanges)
-        => Console.WriteLine($"FINAL RANGES: [{string.Join(", ", joinedRanges.Select(r => $"[{r.from},{r.to}]"))}]");
+    {
+        Console.WriteLine($"FINAL RANGES: [{string.Join(", ", joinedRanges.Select(r => $"[{r.from},{r.to}]"))}]");
+    }
 
     /// <summary>
-    /// Algorithm
-    /// We will be iterating over each range and add build result list based on the conditions. We have several cases to consider:
-    /// ....|_______|...... - lets consider this as a base
-    /// we have several cases for separate handling
-    /// ......|___|........ - CASE 1: fully contained
-    /// ..|___________|.... - CASE 2: fully contained reversed
-    /// .........|_______|. - CASE 3: left overlap
-    /// .|_______|......... - CASE 4: right overlap
-    /// OTHERS: everything else is just not overlapping
-    ///
-    /// For case 1-4 we modify base record with new from/to values
-    /// For others we just add it to output list
-    /// This is not handling overlaps of more than 2 ranges, but each run reduce number of multiple overlaps by at least one. Recursive call will handle the rest.
-    ///</summary>
+    ///     Algorithm
+    ///     We will be iterating over each range and add build result list based on the conditions. We have several cases to
+    ///     consider:
+    ///     ....|_______|...... - lets consider this as a base
+    ///     we have several cases for separate handling
+    ///     ......|___|........ - CASE 1: fully contained
+    ///     ..|___________|.... - CASE 2: fully contained reversed
+    ///     .........|_______|. - CASE 3: left overlap
+    ///     .|_______|......... - CASE 4: right overlap
+    ///     OTHERS: everything else is just not overlapping
+    ///     For case 1-4 we modify base record with new from/to values
+    ///     For others we just add it to output list
+    ///     This is not handling overlaps of more than 2 ranges, but each run reduce number of multiple overlaps by at least
+    ///     one. Recursive call will handle the rest.
+    /// </summary>
     /// <returns></returns>
-    private List<(long from, long to)> JoinFreshnessRanges(List<(long from, long to)> ranges, bool isFullDebugEnabled = false)
+    private List<(long from, long to)> JoinFreshnessRanges(List<(long from, long to)> ranges,
+        bool isFullDebugEnabled = false)
     {
         var calculatedRanges = new List<(long from, long to)>();
 
@@ -113,7 +118,8 @@ internal class CafeteriaSolver
             // BASE: ....|_______|......
             // NEW:  ..|___________|....
             if (calculatedRanges.FindIndex(calculatedRange =>
-                    range.from <= calculatedRange.from && range.to >= calculatedRange.to) is var indexOverlap and not -1)
+                    range.from <= calculatedRange.from && range.to >= calculatedRange.to) is
+                var indexOverlap and not -1)
             {
                 var overlap = calculatedRanges[indexOverlap];
                 if (_isDebugEnabled && isFullDebugEnabled)
@@ -165,5 +171,7 @@ internal class CafeteriaSolver
     }
 
     public long SolveRiddle(bool riddlePartTwo = false)
-        => riddlePartTwo ? CountProductsConsideredFresh() : CountFreshProducts();
+    {
+        return riddlePartTwo ? CountProductsConsideredFresh() : CountFreshProducts();
+    }
 }

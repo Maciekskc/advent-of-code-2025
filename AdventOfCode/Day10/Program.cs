@@ -9,7 +9,7 @@ Console.WriteLine($"The answer for given input is {solver.SolvePuzzles(true)}");
 
 internal class FactorySolver
 {
-    private List<Machine> _machines = [];
+    private readonly List<Machine> _machines = [];
 
     public FactorySolver(string[] lines)
     {
@@ -47,7 +47,6 @@ internal class FactorySolver
             }
 
             combinationLength++;
-
         } while (true); //it has to find at some point
     }
 
@@ -56,25 +55,27 @@ internal class FactorySolver
         var solver = Solver.CreateSolver("SCIP");
         var maxClicks = machine.JoltageSequence.Sum();
         var variables = new List<Variable>();
-        
-        for (var i = 0; i < machine.Buttons.Length; i++) variables.Add(solver.MakeIntVar(0,maxClicks, $"button_{i}"));
-        
+
+        for (var i = 0; i < machine.Buttons.Length; i++) variables.Add(solver.MakeIntVar(0, maxClicks, $"button_{i}"));
+
         for (var i = 0; i < machine.JoltageSequence.Length; i++)
         {
-            var constraint = solver.MakeConstraint(machine.JoltageSequence[i], machine.JoltageSequence[i], $"joltage_position_{i}");
+            var constraint = solver.MakeConstraint(machine.JoltageSequence[i], machine.JoltageSequence[i],
+                $"joltage_position_{i}");
             for (var buttonIndex = 0; buttonIndex < machine.Buttons.Length; buttonIndex++)
-                if ( machine.Buttons[buttonIndex].Any(p => p == i))
+                if (machine.Buttons[buttonIndex].Any(p => p == i))
                     constraint.SetCoefficient(variables[buttonIndex], 1);
         }
+
         var objective = solver.Objective();
         foreach (var variable in variables) objective.SetCoefficient(variable, 1);
         objective.SetMinimization();
         solver.Solve();
-        
-        return (int)variables.Select(v=> v.SolutionValue()).Sum();
+
+        return (int)variables.Select(v => v.SolutionValue()).Sum();
     }
 
-    static IEnumerable<int[]> CombinationsWithRepetition(int n, int k)
+    private static IEnumerable<int[]> CombinationsWithRepetition(int n, int k)
     {
         if (k <= 0)
             yield break;
@@ -105,7 +106,6 @@ internal class FactorySolver
     {
         public readonly string IndicatorTargetSequence;
         public readonly int[] JoltageSequence;
-        public int[][] Buttons { get; }
 
         public Machine(string machineDescription)
         {
@@ -118,10 +118,7 @@ internal class FactorySolver
             {
                 var digits = input[1..^1].Split(',');
                 Buttons[iterator] = new int[digits.Length];
-                for (var index = 0; index < digits.Length; index++)
-                {
-                    Buttons[iterator][index] = int.Parse(digits[index]);
-                }
+                for (var index = 0; index < digits.Length; index++) Buttons[iterator][index] = int.Parse(digits[index]);
 
                 iterator++;
             }
@@ -132,36 +129,22 @@ internal class FactorySolver
                 JoltageSequence[index] = int.Parse(joltagaArray[index]);
         }
 
-        public override string ToString() =>
-            $"Machine with initiating sequence [{IndicatorTargetSequence}]. Required Joltage [{string.Join(',',JoltageSequence)}]. Buttons [{string.Join(",", Buttons.Select(button => "(" + string.Join(",", button) + ")"))}]";
+        public int[][] Buttons { get; }
+
+        public override string ToString()
+        {
+            return
+                $"Machine with initiating sequence [{IndicatorTargetSequence}]. Required Joltage [{string.Join(',', JoltageSequence)}]. Buttons [{string.Join(",", Buttons.Select(button => "(" + string.Join(",", button) + ")"))}]";
+        }
 
         public string GetIndicatorLightStateFromButtonsSequenceClick(int[] buttonsSequence)
         {
             var lights = new char[IndicatorTargetSequence.Length];
             Array.Fill(lights, '.');
 
-            foreach (var buttonIndex in buttonsSequence)
-            {
-                PressButton(buttonIndex, lights);
-            }
+            foreach (var buttonIndex in buttonsSequence) PressButton(buttonIndex, lights);
 
             return new string(lights);
-        }
-        
-        public int[] GetJoltageStateFromButtonsSequenceClick(int[] buttonsSequence)
-        {
-            var joltageState = new int[JoltageSequence.Length];
-
-            foreach (var buttonIndex in buttonsSequence)
-            {
-                var positions = Buttons[buttonIndex];
-                foreach (var position in positions)
-                {
-                    joltageState[position]++;
-                }
-            }
-
-            return joltageState;
         }
 
         private void PressButton(int buttonIndex, char[] lights)

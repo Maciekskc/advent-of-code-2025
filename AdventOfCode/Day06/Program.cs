@@ -9,9 +9,9 @@ Console.WriteLine($"The answer for given input is {solver.SolveEquations()}");
 
 internal class TrashCompactorSolver
 {
+    private readonly int[][] _problemsNumbers;
     private readonly string[] _problemsOperations;
     private readonly string[][] _worksheet;
-    private readonly int[][] _problemsNumbers;
 
     public TrashCompactorSolver(string[] worksheetLines)
     {
@@ -29,17 +29,15 @@ internal class TrashCompactorSolver
         var numberMatrixDimensions = (rows: worksheet.Length - 1, columns: worksheet[0].Length);
         var numbers = new int[numberMatrixDimensions.columns][];
 
-        for (int column = 0; column < numberMatrixDimensions.columns; column++)
+        for (var column = 0; column < numberMatrixDimensions.columns; column++)
         {
             numbers[column] = new int[worksheet[0][column].Length];
 
-            for (int digit = 0; digit < worksheet[0][column].Length; digit++)
+            for (var digit = 0; digit < worksheet[0][column].Length; digit++)
             {
                 var builder = new StringBuilder(worksheet[0][column].Length);
-                for (int row = 0; row < numberMatrixDimensions.rows; row++)
-                {
+                for (var row = 0; row < numberMatrixDimensions.rows; row++)
                     builder.Append(worksheet[row][column][digit]);
-                }
 
                 numbers[column][digit] = int.Parse(builder.ToString());
             }
@@ -50,7 +48,7 @@ internal class TrashCompactorSolver
 
     private static string[][] SplitWorkbookRespectingNumbers(string[] worksheetLines)
     {
-        string[][] fixedWorksheet = new string[worksheetLines.Length][];
+        var fixedWorksheet = new string[worksheetLines.Length][];
         string[] worksheetLinesFixed = new string[worksheetLines.Length];
 
         for (var i = 0; i < worksheetLines.Length; i++)
@@ -59,16 +57,10 @@ internal class TrashCompactorSolver
             {
                 var builder = new StringBuilder(worksheetLines[i].Length);
                 for (var j = 0; j < worksheetLines[i].Length; j++)
-                {
                     if (worksheetLines[i][j] == ' ' && IsSeparatorPosition(worksheetLines, j))
-                    {
                         builder.Append(':');
-                    }
                     else
-                    {
                         builder.Append(worksheetLines[i][j]);
-                    }
-                }
 
                 worksheetLinesFixed[i] = builder.ToString();
             }
@@ -103,7 +95,7 @@ internal class TrashCompactorSolver
     private void PrintEquations()
     {
         Console.WriteLine("Equations:");
-        for (int i = 0; i < _worksheet[0].Length; i++)
+        for (var i = 0; i < _worksheet[0].Length; i++)
         {
             Console.Write(_problemsOperations[i]);
             foreach (var line in _problemsNumbers[i])
@@ -118,7 +110,6 @@ internal class TrashCompactorSolver
         {
             long partialSum = _problemsOperations[index] == "*" ? 1 : 0;
             foreach (var element in _problemsNumbers[index])
-            {
                 switch (_problemsOperations[index])
                 {
                     case "+":
@@ -131,7 +122,6 @@ internal class TrashCompactorSolver
                     default:
                         throw new ArgumentException($"Unknown operation: {_problemsOperations[index]}");
                 }
-            }
 
             partialResults[index] = partialSum;
             Console.WriteLine($"{string.Join(_problemsOperations[index], _problemsNumbers[index])} = {partialSum}");

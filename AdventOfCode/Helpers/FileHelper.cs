@@ -14,7 +14,7 @@ public static class FileHelper
 
         return matrix.ToArray();
     }
-    
+
     public static string[][] GetStringMatrixFromFile(this StreamReader sr, char separator = ' ')
     {
         List<string[]> matrix = [];
@@ -27,7 +27,7 @@ public static class FileHelper
 
         return matrix.ToArray();
     }
-    
+
     public static string[] GetStringListFromFile(this StreamReader sr)
     {
         List<string> list = [];
@@ -43,12 +43,12 @@ public static class FileHelper
 
     public static List<string> ReadAllLines(this StreamReader sr)
     {
-        List<string> result = new List<string>();
+        var result = new List<string>();
         while (!sr.EndOfStream)
             result.Add(sr.ReadLine()!);
         return result;
     }
-    
+
     public static StreamReader GetFileStream(string path)
     {
         if (!File.Exists(path)) throw new ArgumentException($"File {path} does not exist.");

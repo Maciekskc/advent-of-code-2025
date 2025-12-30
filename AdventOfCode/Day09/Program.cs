@@ -30,11 +30,8 @@ internal class MovieTheaterSolver
             var a = Math.Abs(_points[i].X - _points[j].X) + 1;
             var b = Math.Abs(_points[i].Y - _points[j].Y) + 1;
             var area = a * b;
-            if (biggestRectangle.Item3 < area)
-            {
-                biggestRectangle = (i, j, area);
-                // Console.WriteLine($"Bigger rectangle [({_points[i]})({_points[j]})]; a:{a} x b:{b} = {area}");
-            }
+            if (biggestRectangle.Item3 < area) biggestRectangle = (i, j, area);
+            // Console.WriteLine($"Bigger rectangle [({_points[i]})({_points[j]})]; a:{a} x b:{b} = {area}");
         }
 
         return biggestRectangle;

@@ -9,17 +9,17 @@ Console.WriteLine($"The answer for given input is {solver.AnalyseQuantumBeamSpli
 
 internal partial class LaboratoriesSolver(string[] lines)
 {
-    private int _splitCounter = 0;
-    private long _timeLineCounter = 0;
     private readonly Dictionary<(int, int), long> _nodes = new();
+    private int _splitCounter;
+    private long _timeLineCounter;
 
     public long AnalyseQuantumBeamSplit()
     {
         _timeLineCounter = 0;
 
-        Stopwatch sw = Stopwatch.StartNew();
+        var sw = Stopwatch.StartNew();
         Console.WriteLine(
-            $"Quantum calculation need to consider whole multiverse. Please give it some time to finish...");
+            "Quantum calculation need to consider whole multiverse. Please give it some time to finish...");
 
         _timeLineCounter = AnalyseEachMultiverse();
 
@@ -40,10 +40,7 @@ internal partial class LaboratoriesSolver(string[] lines)
 
     private long CalculateSubgraphs(int x, int y)
     {
-        if (_nodes.TryGetValue((x, y), out var node))
-        {
-            return node;
-        }
+        if (_nodes.TryGetValue((x, y), out var node)) return node;
 
         var i = y + 1;
         while (i < lines.Length - 1 && lines[i][x] != '^')

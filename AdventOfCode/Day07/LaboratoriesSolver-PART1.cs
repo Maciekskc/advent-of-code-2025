@@ -3,7 +3,7 @@
     public (int splitCounter, string[] finallMatrix) AnalyseBeamSplit()
     {
         _splitCounter = 0;
-        var linesWithBeamAdapted = new List<string>() { lines[0] };
+        var linesWithBeamAdapted = new List<string> { lines[0] };
         var beamPositions = new List<int> { lines[0].IndexOf('S') };
 
         foreach (var line in lines[1..])

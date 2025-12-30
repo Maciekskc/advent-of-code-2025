@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-var path = "input.txt";
+﻿var path = "input.txt";
 try
 {
     if (!File.Exists(path)) throw new ArgumentException($"File {path} does not exist.");
@@ -19,7 +17,7 @@ catch (Exception e)
 public class EscalatorPowerResolver(bool isDebugEnabled, int allowedDigits)
 {
     private long _totalVoltagePower;
-    
+
     public long GetTotalVoltagePower(StreamReader sr)
     {
         _totalVoltagePower = 0;
@@ -37,23 +35,23 @@ public class EscalatorPowerResolver(bool isDebugEnabled, int allowedDigits)
 
     private long CalculateHighestJoltageOfTheBank(string line)
     {
-        var cursor = 0; 
-        long sum = 0; 
-        if(isDebugEnabled)
+        var cursor = 0;
+        long sum = 0;
+        if (isDebugEnabled)
             Console.WriteLine($"Finding max joltage ({allowedDigits} digits) in {line}");
-        
-        for (var i = allowedDigits ; i > 0; i--) 
+
+        for (var i = allowedDigits; i > 0; i--)
         {
             var partLength = line.Length - i - cursor + 1;
-            var nextMax = line 
-                .Substring(cursor, partLength) 
+            var nextMax = line
+                .Substring(cursor, partLength)
                 .Max();
-            
+
             if (isDebugEnabled)
-                StringExtensions.JoltageSearchDebugging(line, cursor, partLength,  nextMax.position + cursor);
-            
-            sum += nextMax.value; 
-            cursor += nextMax.position + 1; 
+                StringExtensions.JoltageSearchDebugging(line, cursor, partLength, nextMax.position + cursor);
+
+            sum += nextMax.value;
+            cursor += nextMax.position + 1;
 
             sum *= 10;
         }
@@ -62,27 +60,28 @@ public class EscalatorPowerResolver(bool isDebugEnabled, int allowedDigits)
     }
 }
 
-internal static class StringExtensions{
-
+internal static class StringExtensions
+{
     internal static (long value, int position) Max(this string input, int cursorBaseOffset = 0)
     {
         var max = 0;
         var position = -1;
-        for(var cursor = 0; cursor < input.Length; cursor++)
+        for (var cursor = 0; cursor < input.Length; cursor++)
         {
             var digit = int.Parse(input[cursor].ToString());
 
             if (digit <= max) continue;
-            
+
             max = digit;
             position = cursor;
         }
-        
+
         return (max, position + cursorBaseOffset);
     }
 
     /// <summary>
-    /// This is an internal metod for debugging joltage. It is printing line with highlighting range of the search and max value found.
+    ///     This is an internal metod for debugging joltage. It is printing line with highlighting range of the search and max
+    ///     value found.
     /// </summary>
     /// <param name="message"></param>
     /// <param name="cursor"></param>
@@ -115,7 +114,7 @@ internal static class StringExtensions{
                 _ => original
             };
 
-            
+
             Console.Write(message[i]);
         }
 

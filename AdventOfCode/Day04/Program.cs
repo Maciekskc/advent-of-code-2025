@@ -49,16 +49,17 @@ internal class PrintingDepartmentSolver(char[][] magazine, bool isDebugEnabled =
         }
     }
 
-    private int CountAccessibleRolls() => magazine.SelectMany(row => row).Count(column => column == AccessibleRollChar);
+    private int CountAccessibleRolls()
+    {
+        return magazine.SelectMany(row => row).Count(column => column == AccessibleRollChar);
+    }
 
     private void RemoveAccessibleRolls()
     {
         foreach (var t in magazine)
             for (var j = 0; j < t.Length; j++)
-            {
                 if (t[j] == AccessibleRollChar)
                     t[j] = EmptySlot;
-            }
     }
 
     private bool IfAccessible(int x, int y)
@@ -93,10 +94,7 @@ internal class PrintingDepartmentSolver(char[][] magazine, bool isDebugEnabled =
         Console.WriteLine("Current magazine state:");
         foreach (var line in magazine)
         {
-            foreach (var character in line)
-            {
-                Console.Write(character);
-            }
+            foreach (var character in line) Console.Write(character);
 
             Console.WriteLine();
         }

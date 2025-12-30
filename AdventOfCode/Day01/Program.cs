@@ -17,10 +17,10 @@ catch (Exception e)
 internal class Safe
 {
     private const int DialRange = 100;
+    private bool _isProtocol0X434C49434BEnabled;
     private int _state = 50;
     private int _zeroCounter;
-    private bool _isProtocol0X434C49434BEnabled = false;
-    
+
     private void ResetState()
     {
         _state = 50;
@@ -53,7 +53,7 @@ internal class Safe
     {
         if (_isProtocol0X434C49434BEnabled)
             CalculateFor0X434C49434B(turnInfo);
-        
+
         CalculateDefault(turnInfo.clicksFixed);
     }
 
@@ -68,20 +68,23 @@ internal class Safe
             < 0 when _state > 0 => true,
             _ => false
         };
-        
+
         if (crossZeroCondition) _zeroCounter++;
     }
 
     private void CalculateDefault(int clicks)
     {
-        if(_state + clicks is 0 or DialRange) _zeroCounter++;
+        if (_state + clicks is 0 or DialRange) _zeroCounter++;
     }
 
-    private static (int fullRotations, int clicksFixed) GetTurnInfo(int totalClicks) => (int.Abs(totalClicks/DialRange), totalClicks % (DialRange));
+    private static (int fullRotations, int clicksFixed) GetTurnInfo(int totalClicks)
+    {
+        return (int.Abs(totalClicks / DialRange), totalClicks % DialRange);
+    }
 
     public int Decode(StreamReader reader, bool isProtocol0X434C49434BEnabled)
     {
-        _isProtocol0X434C49434BEnabled =  isProtocol0X434C49434BEnabled;
+        _isProtocol0X434C49434BEnabled = isProtocol0X434C49434BEnabled;
         while (!reader.EndOfStream)
         {
             var line = reader.ReadLine();
