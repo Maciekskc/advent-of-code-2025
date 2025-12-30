@@ -1,6 +1,7 @@
-﻿using Helpers;
+﻿using Google.OrTools.LinearSolver;
+using Helpers;
 
-var path = "input-test.txt";
+var path = "input.txt";
 var lines = FileHelper.GetFileStream(path).GetStringListFromFile();
 
 var solver = new FactorySolver(lines);
@@ -52,30 +53,25 @@ internal class FactorySolver
 
     private int CalculateClicksForJoltage(Machine machine)
     {
-        var combinationLength = machine.JoltageSequence.Max();
-        var counter = 0;
-        do
+        var solver = Solver.CreateSolver("SCIP");
+        var maxClicks = machine.JoltageSequence.Sum();
+        var variables = new List<Variable>();
+        
+        for (var i = 0; i < machine.Buttons.Length; i++) variables.Add(solver.MakeIntVar(0,maxClicks, $"button_{i}"));
+        
+        for (var i = 0; i < machine.JoltageSequence.Length; i++)
         {
-            var combinations = CombinationsWithRepetition(machine.Buttons.Length, combinationLength);
-            foreach (var combination in combinations)
-            {
-                var currentSequence = machine.GetJoltageStateFromButtonsSequenceClick(combination);
-                if (currentSequence.SequenceEqual(machine.JoltageSequence))
-                {
-                    Console.WriteLine($"Joltage state match after {counter} checks. Combination of {combinationLength} digits, Sequence: [{string.Join(',',combination)}]");
-                    return combinationLength;
-                }
-                counter++;
-            }
-
-            combinationLength++;
-
-            // if (combinationLength == 20)
-            // {
-            //     Console.WriteLine("We reach length 20. It is unexpectedly big. Terminating");
-            //     return -1;
-            // }
-        } while (true); //it has to find at some point
+            var constraint = solver.MakeConstraint(machine.JoltageSequence[i], machine.JoltageSequence[i], $"joltage_position_{i}");
+            for (var buttonIndex = 0; buttonIndex < machine.Buttons.Length; buttonIndex++)
+                if ( machine.Buttons[buttonIndex].Any(p => p == i))
+                    constraint.SetCoefficient(variables[buttonIndex], 1);
+        }
+        var objective = solver.Objective();
+        foreach (var variable in variables) objective.SetCoefficient(variable, 1);
+        objective.SetMinimization();
+        solver.Solve();
+        
+        return (int)variables.Select(v=> v.SolutionValue()).Sum();
     }
 
     static IEnumerable<int[]> CombinationsWithRepetition(int n, int k)

@@ -20,4 +20,8 @@
       <ProjectReference Include="..\Helpers\Helpers.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Google.OrTools" Version="9.14.6206" />
+    </ItemGroup>
+
 </Project>
