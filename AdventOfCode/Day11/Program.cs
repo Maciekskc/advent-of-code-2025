@@ -23,7 +23,6 @@ internal class ReactorSolver
             _deviceOutputs.TryAdd(key, outputs);
         }
         _deviceOutputs.TryAdd("out", []);
-
     }
 
     public int SolvePuzzlesPart1() => EnrollSequence([StartDevice]).Count;

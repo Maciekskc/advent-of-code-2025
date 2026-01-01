@@ -34,7 +34,7 @@ public static class FileHelper
         while (!sr.EndOfStream)
         {
             var line = sr.ReadLine();
-            ArgumentException.ThrowIfNullOrEmpty(line);
+            // ArgumentException.ThrowIfNullOrEmpty(line);
             list.Add(line);
         }
 
