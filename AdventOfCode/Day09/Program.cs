@@ -4,13 +4,15 @@ var path = "input.txt";
 var lines = FileHelper.GetFileStream(path).GetStringListFromFile();
 
 var solver = new MovieTheaterSolver(lines);
-Console.WriteLine($"The answer for given input is {solver.RectangleMax(true)}");
+Console.WriteLine($"The answer for given input is {solver.RectangleMax(true).Area}");
 
 
 internal class MovieTheaterSolver
 {
     private readonly Point[] _points;
     private readonly Line[] _lines;
+    private readonly List<(long x1, long y1, long x2, long y2, bool isFilled)> _regions = [];
+
 
     public MovieTheaterSolver(string[] input)
     {
@@ -28,6 +30,24 @@ internal class MovieTheaterSolver
         }
 
         _lines[0] = new Line(_points[^1], _points[0]);
+
+        CalculateRegions();
+    }
+
+    private void CalculateRegions()
+    {
+        var distinctX = _points.Select(p => p.X).Distinct().OrderBy(x => x).ToArray();
+        var distinctY = _points.Select(p => p.Y).Distinct().OrderBy(y => y).ToArray();
+
+        for (var xIndex = 1; xIndex < distinctX.Length; xIndex++)
+        for (var yIndex = 1; yIndex < distinctY.Length; yIndex++)
+        {
+            var regionCenter = new Point((distinctX[xIndex - 1] + distinctX[xIndex]) / 2,
+                (distinctY[yIndex - 1] + distinctY[yIndex]) / 2);
+            var value = IsWithinPolygon(regionCenter);
+            _regions.Add((distinctX[xIndex - 1], distinctY[yIndex - 1], distinctX[xIndex],
+                distinctY[yIndex], value));
+        }
     }
 
     public (int IndexOfFirst, int IndexOfSecond, long Area) RectangleMax(bool withinLines = false)
@@ -36,113 +56,50 @@ internal class MovieTheaterSolver
         for (var i = 0; i < _points.Length; i++)
         for (var j = i + 1; j < _points.Length; j++)
         {
-            //Algorithm for part 2 is not enough, because we check only corners, but apparently the lines can define some whole in the full rectangle. It have to be revisited
-            if (withinLines)
+            var xMin = Math.Min(_points[i].X, _points[j].X);
+            var xMax = Math.Max(_points[i].X, _points[j].X);
+            var yMin = Math.Min(_points[i].Y, _points[j].Y);
+            var yMax = Math.Max(_points[i].Y, _points[j].Y);
+            
+            if (!_regions.Where(r => r.x1 >= xMin && r.y1 >= yMin && r.x2 <= xMax && r.y2 <= yMax).All(r => r.isFilled))
             {
-                var thirdCorner = new Point(_points[i].X, _points[j].Y);
-                var fourthCorner = new Point(_points[j].X, _points[i].Y);
-
-                // Console.WriteLine($"Checking if all within the lines [1]({_points[i]}) [2]({_points[j]}) [3]({thirdCorner}) [4]({fourthCorner})");
-
-                if (!IsWithinPolygon(thirdCorner))
-                {
-                    // Console.WriteLine($"Third {thirdCorner} outside of the polygon");
-                    continue;
-                }
-
-
-                if (!IsWithinPolygon(fourthCorner))
-                {
-                    // Console.WriteLine($"Fourth {thirdCorner} outside of the polygon");
-                    continue;
-                }
+                continue;
             }
 
             var a = Math.Abs(_points[i].X - _points[j].X) + 1;
             var b = Math.Abs(_points[i].Y - _points[j].Y) + 1;
             var area = a * b;
-            if (biggestRectangle.Item3 < area) biggestRectangle = (i, j, area);
-            // Console.WriteLine($"Bigger rectangle [({_points[i]})({_points[j]})]; a:{a} x b:{b} = {area}");
+            if (biggestRectangle.Item3 < area)
+            {
+                biggestRectangle = (i, j, area);
+            }
         }
-
+    
+        Console.WriteLine($"The biggest rectangle is between {_points[biggestRectangle.Item1]} and {_points[biggestRectangle.Item2]}");
         return biggestRectangle;
     }
 
     private bool IsWithinPolygon(Point investigated) =>
-        _lines.Any(x => x.IfCrossLine(investigated, Direction.South)) &&
-        _lines.Any(x => x.IfCrossLine(investigated, Direction.North)) &&
-        _lines.Any(x => x.IfCrossLine(investigated, Direction.East)) &&
-        _lines.Any(x => x.IfCrossLine(investigated, Direction.West));
+        investigated.RayCasting(_lines) % 2 == 1;
 
-    private record Point(long X, long Y);
-
-    private record Line
+    private record Point(long X, long Y)
     {
-        public Point A { get; }
-        public Point B { get; }
-
-        private LineOrientation _orientation;
-
-        public Line(Point A, Point B)
+        public int RayCasting(Line[] lines)
         {
-            this.A = A;
-            this.B = B;
-            if (A.X == B.X)
-                _orientation = LineOrientation.Vertical;
+            return lines.Count(line =>
+                line.Orientation == Line.LineOrientation.Vertical && X < line.A.X &&
+                Y >= Math.Min(line.A.Y, line.B.Y) && Y <= Math.Max(line.A.Y, line.B.Y));
         }
+    };
 
-        public bool IfCrossLine(Point investigated, Direction direction)
-        {
-            if (_orientation == LineOrientation.Horizontal)
-            {
-                if (investigated.X < Math.Min(A.X, B.X) || investigated.X > Math.Max(A.X, B.X))
-                    return false;
-
-                switch (direction)
-                {
-                    case Direction.North when investigated.Y >= A.Y:
-                    case Direction.South when investigated.Y <= A.Y:
-                        return true;
-                    case Direction.East:
-                    case Direction.West:
-                    default:
-                        return false;
-                }
-            }
-
-            if (_orientation == LineOrientation.Vertical)
-            {
-                if (investigated.Y < Math.Min(A.Y, B.Y) || investigated.Y > Math.Max(A.Y, B.Y))
-                    return false;
-
-                switch (direction)
-                {
-                    case Direction.West when investigated.X >= A.X:
-                    case Direction.East when investigated.X <= A.X:
-                        return true;
-                    case Direction.North:
-                    case Direction.South:
-                    default:
-                        return false;
-                }
-            }
-
-            throw new ArgumentOutOfRangeException(
-                $"Invalid check of {investigated} for object {this} with direction {direction.ToString()}");
-        }
+    private record Line(Point A, Point B)
+    {
+        public readonly LineOrientation Orientation = A.X == B.X ? LineOrientation.Vertical : LineOrientation.Horizontal;
 
         internal enum LineOrientation
         {
             Horizontal,
             Vertical
         }
-    }
-
-    internal enum Direction
-    {
-        North,
-        East,
-        South,
-        West
     }
 }
